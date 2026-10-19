@@ -1,65 +1,31 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-
-export type User = {
-  id: number;
-  name: string;
-  email: string;
-  age: number;
-  active: boolean;
-};
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+import { User, UserDocument } from './schema/user.schema';
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [
-    {
-      id: 1,
-      name: 'Ada Lovelace',
-      email: 'ada@example.com',
-      age: 28,
-      active: true,
-    },
-  ];
+  constructor(
+    @InjectModel(User.name) private readonly userModel: Model<User>,
+  ) {}
 
-  async findAll(active?: string, name?: string): Promise<User[]> {
-    await sleep(250);
-    let result = this.users;
+  async findAll(active?: string, name?: string): Promise<UserDocument[]> {
+    const filter: { active?: boolean; name?: string } = {};
 
     if (active !== undefined) {
-      const activeBoolean = active === 'true';
-      result = result.filter((user) => user.active === activeBoolean);
+      filter.active = active === 'true';
     }
     if (name !== undefined) {
-      result = result.filter((user) => user.name === name);
+      filter.name = name;
     }
 
-    return result;
+    return this.userModel.find(filter).exec();
   }
 
-  async findOne(id: number): Promise<User> {
-    await sleep(250);
-    const user = this.users.find((item) => item.id === id);
-
-    if (!user) {
-      throw new NotFoundException(`User with id ${id} was not found`);
-    }
-
-    return user;
-  }
-
-  async create(data: CreateUserDto): Promise<User> {
+  async create(data: CreateUserDto): Promise<UserDocument> {
     this.assertNewUserIsValid(data);
-    await sleep(250);
-    const user: User = { id: this.users.length + 1, ...data };
-    this.users.push(user);
-    return user;
+    return this.userModel.create(data);
   }
 
   private assertNewUserIsValid(data: CreateUserDto): void {
@@ -68,18 +34,5 @@ export class UsersService {
         'Name, email valido y edad mayor o igual a 18 son obligatorios.',
       );
     }
-  }
-
-  async update(id: number, changes: UpdateUserDto): Promise<User> {
-    await sleep(250);
-    const user = await this.findOne(id);
-    Object.assign(user, changes);
-    return user;
-  }
-
-  async remove(id: number): Promise<void> {
-    await sleep(250);
-    const user = await this.findOne(id);
-    this.users.splice(this.users.indexOf(user), 1);
   }
 }
