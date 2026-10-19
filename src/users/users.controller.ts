@@ -8,7 +8,11 @@ import {
   Param,
   Patch,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from 'src/auth/auth.guard';
+import type { AuthenticatedRequest } from 'src/auth/jwt-payload.interface';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
 
@@ -27,13 +31,22 @@ export class UsersController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() data: UpdateUserDto) {
-    return this.usersService.update(id, data);
+  @UseGuards(AuthGuard)
+  update(
+    @Param('id') id: string,
+    @Body() data: UpdateUserDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.usersService.update(id, data, request.user.sub);
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string): Promise<void> {
-    await this.usersService.remove(id);
+  async remove(
+    @Param('id') id: string,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<void> {
+    await this.usersService.remove(id, request.user.sub);
   }
 }

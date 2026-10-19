@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -46,6 +47,10 @@ export class UsersService {
     return user;
   }
 
+  async findByEmail(email: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ email: email.trim().toLowerCase() }).exec();
+  }
+
   async create(data: NewUserData): Promise<UserDocument> {
     try {
       return await this.userModel.create(data);
@@ -54,7 +59,13 @@ export class UsersService {
     }
   }
 
-  async update(id: string, changes: UpdateUserDto): Promise<UserDocument> {
+  async update(
+    id: string,
+    changes: UpdateUserDto,
+    requesterId: string,
+  ): Promise<UserDocument> {
+    this.assertIsSameUser(id, requesterId);
+
     const allowed = ['name', 'email', 'age', 'active'];
     const fields = Object.keys(changes);
 
@@ -81,9 +92,19 @@ export class UsersService {
     }
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, requesterId: string): Promise<void> {
+    this.assertIsSameUser(id, requesterId);
+
     await this.findOne(id);
     await this.userModel.deleteOne({ _id: id }).exec();
+  }
+
+  private assertIsSameUser(id: string, requesterId: string): void {
+    if (id !== requesterId) {
+      throw new ForbiddenException(
+        'Solo podés modificar o borrar tu propia cuenta.',
+      );
+    }
   }
 
   private assertValidId(id: string): void {

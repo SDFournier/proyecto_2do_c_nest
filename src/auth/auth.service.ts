@@ -1,15 +1,29 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { LoginUserDto } from 'src/auth/dto/login-user.dto';
 import { RegisterUserDto } from 'src/auth/dto/register-user.dto';
 import { UserDocument } from 'src/users/schema/user.schema';
 import { UsersService } from 'src/users/users.service';
+import { JwtPayload } from './jwt-payload.interface';
 
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_BYTES = 72;
 
+export interface AccessToken {
+  accessToken: string;
+}
+
 @Injectable()
 export class AuthService {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async register(data: RegisterUserDto): Promise<UserDocument> {
     this.assertRegistrationIsValid(data);
@@ -23,6 +37,34 @@ export class AuthService {
       passwordHash,
       active: true,
     });
+  }
+
+  async login(data: LoginUserDto): Promise<AccessToken> {
+    this.assertLoginIsValid(data);
+
+    const user = await this.usersService.findByEmail(data.email);
+    const passwordMatches = user
+      ? await bcrypt.compare(data.password, user.passwordHash)
+      : false;
+
+    if (!user || !passwordMatches) {
+      throw new UnauthorizedException('Email o password incorrectos.');
+    }
+
+    const payload: JwtPayload = { sub: user.id, email: user.email };
+    return { accessToken: await this.jwtService.signAsync(payload) };
+  }
+
+  private assertLoginIsValid(data: LoginUserDto): void {
+    if (typeof data !== 'object' || data === null) {
+      throw new BadRequestException('el body es obligatorio');
+    }
+    if (typeof data.email !== 'string' || !data.email.trim()) {
+      throw new BadRequestException('email es obligatorio');
+    }
+    if (typeof data.password !== 'string' || !data.password) {
+      throw new BadRequestException('password es obligatorio');
+    }
   }
 
   private assertRegistrationIsValid(data: RegisterUserDto): void {
