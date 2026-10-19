@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -24,9 +28,19 @@ export class UsersService {
     },
   ];
 
-  async findAll(): Promise<User[]> {
+  async findAll(active?: string, name?: string): Promise<User[]> {
     await sleep(250);
-    return this.users;
+    let result = this.users;
+
+    if (active !== undefined) {
+      const activeBoolean = active === 'true';
+      result = result.filter((user) => user.active === activeBoolean);
+    }
+    if (name !== undefined) {
+      result = result.filter((user) => user.name === name);
+    }
+
+    return result;
   }
 
   async findOne(id: number): Promise<User> {
@@ -41,10 +55,19 @@ export class UsersService {
   }
 
   async create(data: CreateUserDto): Promise<User> {
+    this.assertNewUserIsValid(data);
     await sleep(250);
     const user: User = { id: this.users.length + 1, ...data };
     this.users.push(user);
     return user;
+  }
+
+  private assertNewUserIsValid(data: CreateUserDto): void {
+    if (!data.name?.trim() || !data.email?.includes('@') || !(data.age >= 18)) {
+      throw new BadRequestException(
+        'Name, email valido y edad mayor o igual a 18 son obligatorios.',
+      );
+    }
   }
 
   async update(id: number, changes: UpdateUserDto): Promise<User> {
