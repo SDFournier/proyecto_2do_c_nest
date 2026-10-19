@@ -1,8 +1,21 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { CreateUserDto } from './dto/create-user.dto';
+import { isValidObjectId, Model } from 'mongoose';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserDocument } from './schema/user.schema';
+
+export interface NewUserData {
+  name: string;
+  email: string;
+  age: number;
+  active: boolean;
+  passwordHash: string;
+}
 
 @Injectable()
 export class UsersService {
@@ -23,16 +36,66 @@ export class UsersService {
     return this.userModel.find(filter).exec();
   }
 
-  async create(data: CreateUserDto): Promise<UserDocument> {
-    this.assertNewUserIsValid(data);
-    return this.userModel.create(data);
+  async findOne(id: string): Promise<UserDocument> {
+    this.assertValidId(id);
+
+    const user = await this.userModel.findById(id).exec();
+    if (!user) {
+      throw new NotFoundException(`El usuario con id ${id} no existe.`);
+    }
+    return user;
   }
 
-  private assertNewUserIsValid(data: CreateUserDto): void {
-    if (!data.name?.trim() || !data.email?.includes('@') || !(data.age >= 18)) {
+  async create(data: NewUserData): Promise<UserDocument> {
+    try {
+      return await this.userModel.create(data);
+    } catch (error) {
+      throw this.translateDuplicateEmail(error);
+    }
+  }
+
+  async update(id: string, changes: UpdateUserDto): Promise<UserDocument> {
+    const allowed = ['name', 'email', 'age', 'active'];
+    const fields = Object.keys(changes);
+
+    if (fields.length === 0) {
       throw new BadRequestException(
-        'Name, email valido y edad mayor o igual a 18 son obligatorios.',
+        'No se han proporcionado campos para actualizar.',
       );
     }
+    if (fields.some((key) => !allowed.includes(key))) {
+      throw new BadRequestException(
+        `Los campos permitidos para actualizar son: ${allowed.join(', ')}`,
+      );
+    }
+    if (changes.age !== undefined && changes.age < 13) {
+      throw new BadRequestException('La edad debe ser mayor o igual a 13.');
+    }
+
+    const user = await this.findOne(id);
+
+    try {
+      return await user.set(changes).save();
+    } catch (error) {
+      throw this.translateDuplicateEmail(error);
+    }
+  }
+
+  async remove(id: string): Promise<void> {
+    await this.findOne(id);
+    await this.userModel.deleteOne({ _id: id }).exec();
+  }
+
+  private assertValidId(id: string): void {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException(`El ${id} no tiene un formato válido.`);
+    }
+  }
+
+  private translateDuplicateEmail(error: unknown): unknown {
+    const isDuplicate = (error as { code?: number } | null)?.code === 11000;
+    return isDuplicate
+      ? new ConflictException('El email ya está registrado.')
+      : error;
   }
 }

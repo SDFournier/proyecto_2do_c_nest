@@ -1,6 +1,6 @@
 # Marketplace API
 
-API de usuarios construida con NestJS y TypeScript. Estado del proyecto al 28/09: los usuarios se guardan en MongoDB con Mongoose.
+API de usuarios y registro construida con NestJS, TypeScript y MongoDB. Estado del proyecto al 05/10: CRUD de usuarios y registro con password hasheada con bcrypt.
 
 ## Ejecutar
 
@@ -16,7 +16,10 @@ La aplicación escucha en `http://localhost:3000` (o el `PORT` de tu `.env`).
 
 | Método | Ruta | Éxito | Alternativa |
 |---|---|---|---|
+| `POST` | `/auth/register` | `201` y el usuario, sin password ni hash | `400` datos inválidos, `409` email repetido |
 | `GET` | `/users` | `200` y lista | admite `?active=true` y `?name=...`, combinables |
-| `POST` | `/users` | `201` y creado | `400` si faltan datos o la edad es menor de 18 |
+| `GET` | `/users/:id` | `200` y usuario | `400` id inválido, `404` si no existe |
+| `PATCH` | `/users/:id` | `200` y usuario modificado | `400` datos inválidos, `404`, `409` email repetido |
+| `DELETE` | `/users/:id` | `204` sin body | `400` id inválido, `404` si no existe |
 
-Buscar por id, modificar y borrar se reescriben con la base en el siguiente paso del proyecto.
+Los usuarios se crean solo mediante `/auth/register`. Todavía no hay login ni JWT.

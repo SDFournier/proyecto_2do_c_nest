@@ -8,6 +8,7 @@ import { HydratedDocument } from 'mongoose';
     versionKey: false,
     transform: (_doc, ret: Record<string, unknown>) => {
       delete ret._id;
+      delete ret.passwordHash;
       return ret;
     },
   },
@@ -16,7 +17,7 @@ export class User {
   @Prop({ required: true, trim: true })
   name!: string;
 
-  @Prop({ required: true, trim: true })
+  @Prop({ required: true, trim: true, lowercase: true, unique: true })
   email!: string;
 
   @Prop({ required: true })
@@ -24,6 +25,9 @@ export class User {
 
   @Prop({ required: true })
   active!: boolean;
+
+  @Prop({ required: true })
+  passwordHash!: string;
 }
 
 export type UserDocument = HydratedDocument<User>;
