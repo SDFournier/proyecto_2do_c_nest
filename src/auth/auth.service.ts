@@ -39,8 +39,6 @@ export class AuthService {
   }
 
   async login(data: LoginUserDto): Promise<AccessToken> {
-    this.assertLoginIsValid(data);
-
     const user = await this.usersService.findByEmail(data.email);
     const passwordMatches = user
       ? await bcrypt.compare(data.password, user.passwordHash)
@@ -52,18 +50,6 @@ export class AuthService {
 
     const payload: JwtPayload = { sub: user.id, email: user.email };
     return { accessToken: await this.jwtService.signAsync(payload) };
-  }
-
-  private assertLoginIsValid(data: LoginUserDto): void {
-    if (typeof data !== 'object' || data === null) {
-      throw new BadRequestException('el body es obligatorio');
-    }
-    if (typeof data.email !== 'string' || !data.email.trim()) {
-      throw new BadRequestException('email es obligatorio');
-    }
-    if (typeof data.password !== 'string' || !data.password) {
-      throw new BadRequestException('password es obligatorio');
-    }
   }
 
   private assertPasswordFitsBcrypt(password: string): void {
