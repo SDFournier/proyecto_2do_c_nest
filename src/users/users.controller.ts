@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/auth.guard';
 import type { AuthenticatedRequest } from 'src/auth/jwt-payload.interface';
+import { FindUsersQueryDto } from './dto/find-users-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
 
@@ -21,8 +22,8 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  findAll(@Query('active') active?: string, @Query('name') name?: string) {
-    return this.usersService.findAll(active, name);
+  findAll(@Query() query: FindUsersQueryDto) {
+    return this.usersService.findAll(query.active, query.name);
   }
 
   @Get(':id')
