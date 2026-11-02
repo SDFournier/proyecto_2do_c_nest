@@ -66,21 +66,12 @@ export class UsersService {
   ): Promise<UserDocument> {
     this.assertIsSameUser(id, requesterId);
 
-    const allowed = ['name', 'email', 'age', 'active'];
     const fields = Object.keys(changes);
 
     if (fields.length === 0) {
       throw new BadRequestException(
         'No se han proporcionado campos para actualizar.',
       );
-    }
-    if (fields.some((key) => !allowed.includes(key))) {
-      throw new BadRequestException(
-        `Los campos permitidos para actualizar son: ${allowed.join(', ')}`,
-      );
-    }
-    if (changes.age !== undefined && changes.age < 13) {
-      throw new BadRequestException('La edad debe ser mayor o igual a 13.');
     }
 
     const user = await this.findOne(id);
