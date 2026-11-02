@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Front común · Backend II</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --text: #1d2330; --muted: #5d6677; --line: #dde1e8;
+    --accent: #2457d6; --accent-text: #fff; --ok: #1a7f45; --bad: #c0392b; --warn: #a15c00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --card: #1b2029; --text: #e8ebf1; --muted: #9aa4b5; --line: #2c3441;
+      --accent: #6b97ff; --accent-text: #0d1220; --ok: #4cc27f; --bad: #ff7b6b; --warn: #f0b04d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+  header { background: var(--card); border-bottom: 1px solid var(--line); padding: 12px 16px; }
+  .bar { max-width: 880px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+  .bar h1 { font-size: 1.05rem; margin: 0; }
+  .api { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .9rem; color: var(--muted); }
+  main { max-width: 880px; margin: 0 auto; padding: 16px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tabs button { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  .tabs button.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+  .narrow { max-width: 380px; margin: 24px auto; }
+  label { display: block; font-size: .9rem; margin: 12px 0 4px; color: var(--muted); }
+  input { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; }
+  .api input { width: 260px; padding: 6px 8px; }
+  button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-text); cursor: pointer; }
+  button.ghost { background: transparent; color: var(--accent); }
+  button:disabled { opacity: .6; cursor: wait; }
+  .row { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .msg { margin-top: 12px; font-size: .92rem; }
+  .msg.bad { color: var(--bad); } .msg.ok { color: var(--ok); }
+  h2.title { margin: 0 0 4px; font-size: 1.6rem; }
+  .who { color: var(--muted); font-size: .9rem; margin-bottom: 20px; }
+  .section { margin-top: 24px; }
+  .section h3 { margin: 0 0 8px; padding-bottom: 6px; border-bottom: 2px solid var(--accent); font-size: 1.1rem; }
+  .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .item { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--bg); }
+  .item strong { display: block; margin-bottom: 4px; }
+  .item dl { margin: 0; font-size: .88rem; color: var(--muted); }
+  .item dt { display: inline; } .item dd { display: inline; margin: 0 0 0 4px; color: var(--text); }
+  .item div { margin-top: 2px; }
+  .check { display: grid; grid-template-columns: 24px 1fr; gap: 6px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .check:last-child { border-bottom: 0; }
+  .check .detail { color: var(--muted); font-size: .88rem; }
+  .ok-i { color: var(--ok); } .bad-i { color: var(--bad); } .warn-i { color: var(--warn); }
+  .summary { font-weight: 600; margin: 12px 0; }
+  .empty { color: var(--muted); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1>Front común · Programación Backend II</h1>
+    <div class="api">
+      <label for="apiUrl" style="margin:0">URL de tu API</label>
+      <input id="apiUrl" value="http://localhost:3000" spellcheck="false">
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="tabs" role="tablist">
+    <button id="tabApp" class="on" type="button">Mi app</button>
+    <button id="tabCheck" type="button" class="">Verificador del contrato</button>
+  </div>
+
+  <!-- Pantalla de login / registro -->
+  <section id="viewLogin" class="card narrow">
+    <h2 id="authTitle" style="margin-top:0">Iniciar sesión</h2>
+    <form id="authForm">
+      <div id="nameRow" hidden>
+        <label for="name">Nombre</label>
+        <input id="name" autocomplete="name">
+      </div>
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" required>
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <div class="row">
+        <button id="authSubmit" type="submit">Entrar</button>
+        <button id="authToggle" type="button" class="ghost">Crear cuenta</button>
+      </div>
+      <div id="authMsg" class="msg" role="status"></div>
+    </form>
+  </section>
+
+  <!-- Catálogo -->
+  <section id="viewCatalog" class="card" hidden>
+    <div class="bar" style="margin-bottom:8px">
+      <div>
+        <h2 id="catTitle" class="title"></h2>
+        <div id="catWho" class="who"></div>
+      </div>
+      <div class="row" style="margin:0">
+        <button id="reload" type="button" class="ghost">Recargar</button>
+        <button id="logout" type="button" class="ghost">Cerrar sesión</button>
+      </div>
+    </div>
+    <div id="catMsg" class="msg" role="status"></div>
+    <div id="catBody"></div>
+  </section>
+
+  <!-- Verificador -->
+  <section id="viewCheck" class="card" hidden>
+    <h2 style="margin-top:0">Verificador del contrato</h2>
+    <p class="detail" style="color:var(--muted)">Prueba tu API con la URL de arriba: crea un usuario de prueba, inicia sesión y pide el catálogo. Cada línea indica qué falta si algo falla.</p>
+    <button id="runChecks" type="button">Probar mi API</button>
+    <div id="checkSummary" class="summary"></div>
+    <div id="checkList"></div>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento */ } },
+    del(k) { try { localStorage.removeItem(k); } catch (e) { /* sin almacenamiento */ } }
+  };
+
+  let token = store.get('front.token') || '';
+  let mode = 'login';
+  $('apiUrl').value = store.get('front.api') || $('apiUrl').value;
+
+  const apiBase = () => $('apiUrl').value.trim().replace(/\/+$/, '');
+  $('apiUrl').addEventListener('change', () => store.set('front.api', apiBase()));
+
+  const NETWORK_HINT = 'No se pudo conectar con ' + '"URL". Revisá que la API esté corriendo, que la URL y el puerto sean correctos y que main.ts tenga app.enableCors().';
+
+  async function call(method, path, body, withToken) {
+    const headers = {};
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    if (withToken) headers['Authorization'] = 'Bearer ' + withToken;
+    let res;
+    try {
+      res = await fetch(apiBase() + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    } catch (e) {
+      const err = new Error(NETWORK_HINT.replace('URL', apiBase()));
+      err.network = true;
+      throw err;
+    }
+    let data = null;
+    const text = await res.text();
+    try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+    return { status: res.status, data };
+  }
+
+  const messageOf = (data) => {
+    if (data && typeof data === 'object' && data.message) return Array.isArray(data.message) ? data.message.join(', ') : String(data.message);
+    return typeof data === 'string' && data ? data : '';
+  };
+  const tokenOf = (data) => data && (data.accessToken || data.access_token || data.token);
+
+  // ---------- Pestañas ----------
+  function show(view) {
+    $('viewLogin').hidden = view !== 'login';
+    $('viewCatalog').hidden = view !== 'catalog';
+    $('viewCheck').hidden = view !== 'check';
+    $('tabApp').classList.toggle('on', view !== 'check');
+    $('tabCheck').classList.toggle('on', view === 'check');
+  }
+  $('tabApp').addEventListener('click', () => token ? loadCatalog() : show('login'));
+  $('tabCheck').addEventListener('click', () => show('check'));
+
+  // ---------- Login / registro ----------
+  function setMode(next) {
+    mode = next;
+    const reg = mode === 'register';
+    $('authTitle').textContent = reg ? 'Crear cuenta' : 'Iniciar sesión';
+    $('authSubmit').textContent = reg ? 'Registrarme' : 'Entrar';
+    $('authToggle').textContent = reg ? 'Ya tengo cuenta' : 'Crear cuenta';
+    $('nameRow').hidden = !reg;
+    $('password').autocomplete = reg ? 'new-password' : 'current-password';
+    $('authMsg').textContent = '';
+  }
+  $('authToggle').addEventListener('click', () => setMode(mode === 'login' ? 'register' : 'login'));
+
+  async function doLogin(email, password) {
+    const r = await call('POST', '/auth/login', { email, password });
+    if (r.status !== 200 && r.status !== 201) throw new Error(r.status === 401 ? 'Email o password incorrectos.' : 'Error ' + r.status + ': ' + (messageOf(r.data) || 'sin detalle'));
+    const t = tokenOf(r.data);
+    if (typeof t !== 'string' || !t) throw new Error('El login respondió ' + r.status + ' pero no trae el token. Tiene que devolver { "accessToken": "..." }.');
+    token = t;
+    store.set('front.token', token);
+    store.set('front.email', email);
+  }
+
+  $('authForm').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const msg = $('authMsg');
+    const email = $('email').value.trim();
+    const password = $('password').value;
+    msg.className = 'msg'; msg.textContent = 'Enviando…';
+    $('authSubmit').disabled = true;
+    try {
+      if (mode === 'register') {
+        const r = await call('POST', '/auth/register', { name: $('name').value.trim(), email, password });
+        if (r.status === 409) throw new Error('Ese email ya está registrado.');
+        if (r.status !== 201 && r.status !== 200) throw new Error('Error ' + r.status + ': ' + (messageOf(r.data) || 'sin detalle'));
+      }
+      await doLogin(email, password);
+      msg.textContent = '';
+      $('password').value = '';
+      await loadCatalog();
+    } catch (e) {
+      msg.className = 'msg bad'; msg.textContent = e.message;
+    } finally {
+      $('authSubmit').disabled = false;
+    }
+  });
+
+  // ---------- Catálogo ----------
+  function logout() {
+    token = ''; store.del('front.token'); show('login'); setMode('login');
+  }
+  $('logout').addEventListener('click', logout);
+  $('reload').addEventListener('click', () => loadCatalog());
+
+  const nameOf = (it) => it.name || it.title || it.nombre || it.titulo || '(sin nombre)';
+  const HIDDEN = new Set(['id', '_id', '__v', 'name', 'title', 'nombre', 'titulo', 'section', 'seccion', 'createdAt', 'updatedAt']);
+
+  function renderCatalog(data) {
+    $('catTitle').textContent = data.title;
+    $('catWho').textContent = 'Sesión: ' + (store.get('front.email') || '');
+    const body = $('catBody');
+    body.textContent = '';
+    const groups = new Map();
+    data.items.forEach((it) => {
+      const key = String(it.section || it.seccion || 'Sin sección');
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(it);
+    });
+    if (!groups.size) {
+      const p = document.createElement('p'); p.className = 'empty';
+      p.textContent = 'Tu API respondió bien pero no tiene items todavía. Cargá algunos con POST /items.';
+      body.appendChild(p); return;
+    }
+    groups.forEach((items, section) => {
+      const wrap = document.createElement('div'); wrap.className = 'section';
+      const h = document.createElement('h3'); h.textContent = section; wrap.appendChild(h);
+      const grid = document.createElement('div'); grid.className = 'items';
+      items.forEach((it) => {
+        const card = document.createElement('div'); card.className = 'item';
+        const s = document.createElement('strong'); s.textContent = nameOf(it); card.appendChild(s);
+        const dl = document.createElement('dl');
+        Object.keys(it).filter((k) => !HIDDEN.has(k) && it[k] !== null && it[k] !== undefined && typeof it[k] !== 'object').forEach((k) => {
+          const line = document.createElement('div');
+          const dt = document.createElement('dt'); dt.textContent = k + ':';
+          const dd = document.createElement('dd'); dd.textContent = String(it[k]);
+          line.appendChild(dt); line.appendChild(dd); dl.appendChild(line);
+        });
+        card.appendChild(dl); grid.appendChild(card);
+      });
+      wrap.appendChild(grid); body.appendChild(wrap);
+    });
+  }
+
+  async function loadCatalog() {
+    show('catalog');
+    const msg = $('catMsg'); msg.className = 'msg'; msg.textContent = 'Cargando…';
+    $('catBody').textContent = '';
+    try {
+      const r = await call('GET', '/items', undefined, token);
+      if (r.status === 401) { logout(); $('authMsg').className = 'msg bad'; $('authMsg').textContent = 'La sesión venció. Iniciá sesión de nuevo.'; return; }
+      if (r.status !== 200) throw new Error('GET /items respondió ' + r.status + (messageOf(r.data) ? ': ' + messageOf(r.data) : ''));
+      const d = r.data;
+      if (!d || typeof d.title !== 'string' || !Array.isArray(d.items)) {
+        throw new Error('GET /items tiene que devolver { "title": "...", "items": [ ... ] }. Probá el Verificador para ver qué falta.');
+      }
+      msg.textContent = '';
+      renderCatalog(d);
+    } catch (e) {
+      msg.className = 'msg bad'; msg.textContent = e.message;
+    }
+  }
+
+  // ---------- Verificador ----------
+  const ICON = { ok: '✔', bad: '✖', warn: '⚠' };
+  function addCheck(state, title, detail) {
+    const row = document.createElement('div'); row.className = 'check';
+    const i = document.createElement('span'); i.className = state + '-i'; i.textContent = ICON[state];
+    const t = document.createElement('div');
+    const a = document.createElement('div'); a.textContent = title;
+    t.appendChild(a);
+    if (detail) { const d = document.createElement('div'); d.className = 'detail'; d.textContent = detail; t.appendChild(d); }
+    row.appendChild(i); row.appendChild(t); $('checkList').appendChild(row);
+    return state;
+  }
+
+  async function runChecks() {
+    const btn = $('runChecks'); btn.disabled = true;
+    $('checkList').textContent = ''; $('checkSummary').textContent = 'Probando…';
+    const results = [];
+    const rec = (s, t, d) => { results.push(addCheck(s, t, d)); return s === 'ok'; };
+    const stamp = Date.now();
+    const email = 'verificador+' + stamp + '@prueba.com';
+    const password = 'Clave-' + stamp;
+    try {
+      // 1. Registro
+      let r = await call('POST', '/auth/register', { name: 'Verificador', email, password });
+      rec(r.status === 201 ? 'ok' : 'bad', 'POST /auth/register con datos válidos responde 201',
+        r.status === 201 ? '' : 'Respondió ' + r.status + (messageOf(r.data) ? ' (' + messageOf(r.data) + ')' : '') + '. Tiene que crear el usuario y responder 201.');
+      const leaked = r.data && typeof r.data === 'object' && Object.keys(r.data).some((k) => /pass|hash/i.test(k));
+      rec(leaked ? 'bad' : 'ok', 'La respuesta del registro no incluye la password ni el hash',
+        leaked ? 'Quitá passwordHash/password de la respuesta: no deben viajar al cliente.' : '');
+
+      // 2. Registro repetido e inválido
+      r = await call('POST', '/auth/register', { name: 'Verificador', email, password });
+      rec(r.status === 409 ? 'ok' : 'bad', 'Registrar el mismo email otra vez responde 409', r.status === 409 ? '' : 'Respondió ' + r.status + '. El email tiene que ser único.');
+      r = await call('POST', '/auth/register', {});
+      rec(r.status === 400 ? 'ok' : 'bad', 'Registrar con el body vacío responde 400', r.status === 400 ? '' : 'Respondió ' + r.status + '. Hay que validar los campos obligatorios.');
+
+      // 3. Login
+      r = await call('POST', '/auth/login', { email, password: password + 'x' });
+      rec(r.status === 401 ? 'ok' : 'bad', 'Login con password incorrecta responde 401', r.status === 401 ? '' : 'Respondió ' + r.status + '.');
+      r = await call('POST', '/auth/login', { email, password });
+      const t = tokenOf(r.data);
+      const loginOk = (r.status === 200 || r.status === 201) && typeof t === 'string' && t.length > 20;
+      rec(loginOk ? 'ok' : 'bad', 'Login correcto devuelve { "accessToken": "..." }',
+        loginOk ? (r.data.accessToken ? '' : 'Funciona, pero el contrato pide la clave "accessToken".') : 'Respondió ' + r.status + ' y no se encontró el token en la respuesta.');
+      if (loginOk && !r.data.accessToken) results.push(addCheck('warn', 'La clave del token no es "accessToken"', 'El front la acepta igual, pero en la evaluación se espera accessToken.'));
+
+      // 4. Endpoint protegido
+      r = await call('GET', '/items');
+      rec(r.status === 401 ? 'ok' : 'bad', 'GET /items sin token responde 401', r.status === 401 ? '' : 'Respondió ' + r.status + '. La ruta tiene que estar protegida con el guard.');
+      r = await call('GET', '/items', undefined, 'token.invalido.123');
+      rec(r.status === 401 ? 'ok' : 'bad', 'GET /items con un token inválido responde 401', r.status === 401 ? '' : 'Respondió ' + r.status + '.');
+      if (loginOk) {
+        r = await call('GET', '/items', undefined, t);
+        const shapeOk = r.status === 200 && r.data && typeof r.data.title === 'string' && Array.isArray(r.data.items);
+        rec(shapeOk ? 'ok' : 'bad', 'GET /items con token responde 200 y { "title": "...", "items": [...] }',
+          shapeOk ? '' : 'Respondió ' + r.status + (r.status === 200 ? ' pero la forma no coincide: faltan "title" (texto) o "items" (arreglo).' : '.'));
+        if (shapeOk) {
+          const bad = r.data.items.filter((it) => !it || typeof (it.name || it.title || it.nombre || it.titulo) !== 'string' || !(it.section || it.seccion));
+          if (r.data.items.length) rec(bad.length ? 'bad' : 'ok', 'Cada item trae "name" y "section"', bad.length ? bad.length + ' item(s) no tienen name o section.' : '');
+          const sections = new Set(r.data.items.map((it) => it.section || it.seccion));
+          const enough = r.data.items.length >= 3 && sections.size >= 2;
+          results.push(addCheck(enough ? 'ok' : 'warn', 'Hay al menos 3 items repartidos en 2 secciones o más',
+            enough ? '' : 'Tenés ' + r.data.items.length + ' item(s) en ' + sections.size + ' sección(es). Cargá más con POST /items para ver el catálogo completo.'));
+        }
+      }
+    } catch (e) {
+      addCheck('bad', 'No se pudo completar la prueba', e.message);
+      results.push('bad');
+    }
+    const bad = results.filter((s) => s === 'bad').length;
+    const warn = results.filter((s) => s === 'warn').length;
+    $('checkSummary').textContent = bad ? bad + ' prueba(s) fallaron. Corregí y volvé a probar.' : (warn ? 'Todo lo obligatorio funciona (con ' + warn + ' aviso).' : 'Todo en orden: tu API cumple el contrato.');
+    btn.disabled = false;
+  }
+  $('runChecks').addEventListener('click', runChecks);
+
+  // Inicio
+  if (token) loadCatalog(); else show('login');
+})();
+</script>
+</body>
+</html>
