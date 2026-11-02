@@ -2,6 +2,7 @@
 
 API de ejemplo ("Librería") con el recorrido completo que se pide en el parcial y el final de Programación Backend II:
 
+- Validación de datos de entrada con `class-validator` y `ValidationPipe` (`400` con mensajes claros).
 - Configuración con `.env` y conexión a MongoDB Atlas (`@nestjs/config` + `@nestjs/mongoose`).
 - `POST /auth/register`: registro con password hasheada (bcrypt) y email único (`409`).
 - `POST /auth/login`: devuelve `{ "accessToken": "..." }` (JWT).
