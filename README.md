@@ -7,9 +7,9 @@ Una sola página (`index.html`, sin instalar nada) que sirve para probar tu API 
 
 ## Cómo usarlo
 
-1. Descargá `index.html` (o cloná esta rama: `git clone -b front-final --single-branch https://github.com/SDFournier/proyecto_2do_c_nest.git front`).
+1. Conseguí `index.html`: descargalo con el botón **Download raw file** (no con "guardar página"), cloná esta rama (`git clone -b front-final --single-branch https://github.com/SDFournier/proyecto_2do_c_nest.git front`) o copiá su contenido desde la guía *Front común* de las guías de estudiantes.
 2. Levantá tu API (`npm run start:dev`). Tiene que tener `app.enableCors()` en `main.ts`.
-3. Abrí `index.html` con doble clic en el navegador. Arriba a la derecha escribí la URL de tu API (por defecto `http://localhost:3000`).
+3. Abrí `index.html` con doble clic en el navegador. Arriba a la derecha escribí la URL de tu API (por defecto `http://localhost:3000`) y tocá **Probar conexión**: tiene que decir `✔ Conectado`.
 4. Entrá a **Verificador del contrato** y tocá **Probar mi API**.
 
 Si preferís servirlo por HTTP: `npx serve .` dentro de esta carpeta.

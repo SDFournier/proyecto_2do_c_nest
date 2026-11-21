@@ -30,6 +30,9 @@
   label { display: block; font-size: .9rem; margin: 12px 0 4px; color: var(--muted); }
   input { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; }
   .api input { width: 260px; padding: 6px 8px; }
+  .conn { font-size: .85rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); }
+  .conn.ok { color: var(--ok); border-color: var(--ok); } .conn.bad { color: var(--bad); border-color: var(--bad); } .conn.warn { color: var(--warn); border-color: var(--warn); }
+  .api button { padding: 5px 10px; font-size: .85rem; }
   button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-text); cursor: pointer; }
   button.ghost { background: transparent; color: var(--accent); }
   button:disabled { opacity: .6; cursor: wait; }
@@ -62,6 +65,8 @@
     <div class="api">
       <label for="apiUrl" style="margin:0">URL de tu API</label>
       <input id="apiUrl" value="http://localhost:3000" spellcheck="false">
+      <button id="ping" type="button" class="ghost">Probar conexión</button>
+      <span id="conn" class="conn" role="status">Sin probar</span>
     </div>
   </div>
 </header>
@@ -132,8 +137,27 @@
   let mode = 'login';
   $('apiUrl').value = store.get('front.api') || $('apiUrl').value;
 
-  const apiBase = () => $('apiUrl').value.trim().replace(/\/+$/, '');
-  $('apiUrl').addEventListener('change', () => store.set('front.api', apiBase()));
+  // Acepta "localhost:3000" sin http:// y quita las barras del final.
+  const apiBase = () => {
+    let u = $('apiUrl').value.trim().replace(/\/+$/, '');
+    if (u && !/^https?:\/\//i.test(u)) u = 'http://' + u;
+    return u;
+  };
+
+  // Distingue tres casos: la API no responde, responde pero el navegador la bloquea (CORS), o anda.
+  async function ping() {
+    const el = $('conn');
+    el.className = 'conn'; el.textContent = 'Probando…';
+    try { await fetch(apiBase() + '/', { mode: 'no-cors' }); } catch (e) {
+      el.className = 'conn bad'; el.textContent = '✖ No responde: ¿la API está corriendo? ¿URL y puerto correctos?';
+      return;
+    }
+    try { await fetch(apiBase() + '/'); el.className = 'conn ok'; el.textContent = '✔ Conectado'; } catch (e) {
+      el.className = 'conn warn'; el.textContent = '⚠ La API responde, pero el navegador la bloquea: falta app.enableCors() en main.ts';
+    }
+  }
+  $('apiUrl').addEventListener('change', () => { $('apiUrl').value = apiBase(); store.set('front.api', apiBase()); ping(); });
+  $('ping').addEventListener('click', ping);
 
   const NETWORK_HINT = 'No se pudo conectar con ' + '"URL". Revisá que la API esté corriendo, que la URL y el puerto sean correctos y que main.ts tenga app.enableCors().';
 
@@ -361,6 +385,7 @@
   $('runChecks').addEventListener('click', runChecks);
 
   // Inicio
+  ping();
   if (token) loadCatalog(); else show('login');
 })();
 </script>
